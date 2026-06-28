@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent 基本功 EP01 — AntiGravity 環境佈置與第一次動手</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Playfair+Display:wght@700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-primary:#FAFAF7; --bg-slide:#FFFFFF;
+  --accent-1:#2D6A4F; --accent-2:#52B788; --accent-3:#F4A261; --accent-4:#E9C46A;
+  --text-primary:#1A1A2E; --text-secondary:#5C6B73; --border-light:#E8F4F0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans TC',sans-serif;background:#000;overflow:hidden;height:100vh;width:100vw}
+.slides-wrapper{width:100%;height:100vh;position:relative;overflow:hidden}
+.slide{position:absolute;width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:translateX(60px);transition:all .5s cubic-bezier(.4,0,.2,1);pointer-events:none;padding:48px 72px;background:var(--bg-primary)}
+.slide.active{opacity:1;transform:translateX(0);pointer-events:all}
+.slide.prev{opacity:0;transform:translateX(-60px)}
+.progress-bar{position:fixed;bottom:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--accent-1),var(--accent-3));transition:width .4s ease;z-index:100}
+.slide-counter{position:fixed;bottom:16px;right:26px;font-size:13px;color:#fff;mix-blend-mode:difference;z-index:100;letter-spacing:.05em}
+.nav-hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-size:12px;color:#fff;mix-blend-mode:difference;opacity:.7;z-index:100}
+.deco-line{width:64px;height:4px;background:var(--accent-3);border-radius:2px;margin:16px 0}
+.eyebrow{font-family:'Playfair Display';letter-spacing:.28em;font-size:13px;opacity:.8;text-transform:uppercase}
+/* image background slides */
+.bg{color:#fff;flex-direction:column;text-align:center}
+.bg .inner{position:relative;z-index:2;max-width:980px}
+.bg::after{content:'';position:absolute;inset:0;z-index:1}
+.cover{background:url('images/cover.png') center/cover}
+.cover::after{background:linear-gradient(120deg,rgba(26,58,42,.82),rgba(45,106,79,.55))}
+.sec1{background:url('images/sec1.png') center/cover}
+.sec2{background:url('images/sec2.png') center/cover}
+.sec3{background:url('images/sec3.png') center/cover}
+.sec4{background:url('images/sec4.png') center/cover}
+.sec1::after,.sec2::after,.sec3::after,.sec4::after{background:linear-gradient(120deg,rgba(26,58,42,.8),rgba(45,106,79,.55))}
+.ending{background:url('images/ending.png') center/cover}
+.ending::after{background:linear-gradient(120deg,rgba(26,58,42,.84),rgba(45,106,79,.6))}
+.sec-num{font-family:'Playfair Display';font-size:120px;font-weight:700;opacity:.16;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1}
+/* content */
+.wrap{width:100%;max-width:960px}
+.h-eyebrow{color:var(--accent-2);font-size:13px;letter-spacing:.2em;margin-bottom:8px}
+.h-title{font-size:38px;font-weight:900;color:var(--accent-1);line-height:1.2}
+.sub{color:var(--text-secondary);font-size:16px;margin-top:6px}
+.steps{list-style:none;margin-top:22px;display:flex;flex-direction:column;gap:14px}
+.steps li{display:flex;align-items:flex-start;gap:16px}
+.num{width:34px;height:34px;background:var(--accent-1);color:#fff;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-size:15px}
+.steps .tx{font-size:18px;line-height:1.55;color:var(--text-primary);padding-top:3px}
+.steps .tx b{color:var(--accent-1)}
+code,.code{font-family:'JetBrains Mono',monospace}
+.code{display:block;background:#173a2c;color:#d8f3e3;padding:12px 16px;border-radius:10px;font-size:15px;margin-top:8px;word-break:break-all}
+.code .c{color:#8fd9b6}
+.pill{display:inline-block;font-size:13px;padding:3px 12px;border-radius:999px;background:var(--border-light);color:var(--accent-1);margin:3px 6px 3px 0;font-weight:700}
+.note{background:#FFF7EC;border-left:4px solid var(--accent-3);padding:10px 16px;border-radius:8px;color:#7a5b2e;font-size:15px;margin-top:14px}
+.card{background:#fff;border-radius:22px;padding:48px 60px;box-shadow:0 20px 60px rgba(0,0,0,.07);max-width:820px;width:100%;text-align:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+.box{background:#F0FAF5;border:1px solid var(--border-light);border-radius:14px;padding:18px 20px}
+.box h4{color:var(--accent-1);font-size:18px;margin-bottom:6px}
+.box p{font-size:15px;color:var(--text-primary);line-height:1.5}
+.chk{list-style:none;display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.chk li{display:flex;gap:12px;align-items:flex-start;font-size:17px;color:var(--text-primary)}
+.chk .b{width:24px;height:24px;border:2px solid var(--accent-2);border-radius:6px;flex-shrink:0;margin-top:2px}
+.repo{background:#173a2c;color:#eafff4;border-radius:18px;padding:22px 26px;margin-top:18px}
+.repo a{color:#9be3bd;font-weight:700;word-break:break-all}
+table.cmp{width:100%;border-collapse:collapse;margin-top:18px;font-size:16px}
+table.cmp th,table.cmp td{padding:10px 14px;border-bottom:1px solid var(--border-light);text-align:left}
+table.cmp th{background:#F0FAF5;color:var(--accent-1)}
+.tl{list-style:none;margin-top:20px;display:flex;flex-direction:column;gap:12px}
+.tl li{display:flex;gap:14px;align-items:flex-start}
+.tl .ep{background:var(--accent-3);color:#fff;font-weight:700;border-radius:8px;padding:4px 10px;font-size:14px;flex-shrink:0;min-width:54px;text-align:center}
+.tl .d{font-size:16px;color:var(--text-primary);line-height:1.5}
+.tl .d b{color:var(--accent-1)}
+@media(max-width:760px){.slide{padding:32px 22px}.h-title{font-size:26px}.grid2{grid-template-columns:1fr}.sec-num{font-size:70px}.card{padding:30px 24px}}
+</style>
+</head>
+<body>
+<div class="slides-wrapper" id="wrap">
+
+<!-- 1 封面 -->
+<section class="slide bg cover">
+  <div class="inner">
+    <p class="eyebrow">AI Agent 基本功 · EP01</p>
+    <h1 style="font-size:50px;font-weight:900;line-height:1.25;margin-top:16px">用 AI Agent 幫你做事<br>Google AntiGravity 入門</h1>
+    <div class="deco-line" style="margin:20px auto;background:var(--accent-4)"></div>
+    <p style="font-size:18px;opacity:.9">環境佈置與第一次動手　·　半天研習</p>
+    <p style="font-size:15px;opacity:.75;margin-top:8px">【日期】　·　【主辦單位】</p>
+  </div>
+</section>
+
+<!-- 2 講師介紹 -->
+<section class="slide" style="background:#F0FAF5">
+  <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:54px;align-items:center;width:100%;max-width:1000px">
+    <div style="text-align:center">
+      <div style="width:200px;height:200px;border-radius:50%;overflow:hidden;border:5px solid var(--accent-2);margin:0 auto 18px;box-shadow:0 10px 30px rgba(45,106,79,.2)">
+        <img src="teacher.png" style="width:100%;height:100%;object-fit:cover" alt="講師照片">
+      </div>
+      <div style="background:var(--accent-1);color:#fff;padding:7px 20px;border-radius:20px;display:inline-block;font-size:14px;font-weight:700">講師介紹</div>
+    </div>
+    <div>
+      <p class="h-eyebrow">ABOUT THE INSTRUCTOR</p>
+      <h2 style="font-size:34px;font-weight:900;color:var(--accent-1)">許凱琳 老師</h2>
+      <p style="color:var(--accent-3);font-weight:700;margin-bottom:14px">新北市大豐國小　自然教師</p>
+      <div class="deco-line"></div>
+      <ul style="list-style:none;line-height:1.9;color:var(--text-primary);font-size:15.5px">
+        <li>▸ 115 年新北市特殊優良教師．112 年新北市 Super 師獎</li>
+        <li>▸ 教育部數位學習推動優良案 自主學習組佳作</li>
+        <li>▸ ViewSonic 創新教師獎 TOP 10</li>
+        <li>▸ 教育部 A1／B3／B5-1 生成式 AI 工作坊合格講師</li>
+        <li>▸ Gemini 認證講師．2019–2026 iPad 種子教師</li>
+        <li>▸ Apple Learning Coach．Apple 專業學習專家（APLS）</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 3 今天帶走什麼 -->
+<section class="slide" style="flex-direction:column;text-align:center">
+  <div class="card">
+    <p class="sub" style="margin-bottom:18px">今天的承諾</p>
+    <h2 style="font-size:44px;font-weight:900;color:var(--accent-1);line-height:1.3">3 小時後，你會<br>親手用 AI 完成一個成果</h2>
+    <div class="deco-line" style="margin:22px auto"></div>
+    <p class="sub">從安裝、設定，到讓 AI 幫你動手做事——一步一步帶你走</p>
+  </div>
+</section>
+
+<!-- 4 聊天 vs 動手 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">CORE CONCEPT</p>
+    <h2 class="h-title">聊天 vs 動手：AI Agent 差在哪？</h2>
+    <div class="deco-line"></div>
+    <div class="grid2">
+      <div class="box" style="background:#FFF7EC;border-color:#F4D7A8">
+        <h4 style="color:var(--accent-3)">💬 生成式 AI（聊天）</h4>
+        <p>產出文字／圖片，要你自己複製貼上。<br><b>不能</b>動你電腦上的檔案。</p>
+      </div>
+      <div class="box">
+        <h4>🛠️ AI Agent（動手）</h4>
+        <p>真的會做事：開檔、改檔、整理、上網。<br><b>可以</b>處理你的本地端檔案。</p>
+      </div>
+    </div>
+    <div class="note">一句話：請一個一個月 600 多塊、<b>會動手</b>的數位助理。</div>
+  </div>
+</section>
+
+<!-- 5 判斷關鍵 -->
+<section class="slide" style="flex-direction:column;text-align:center">
+  <div class="card">
+    <p class="sub" style="margin-bottom:18px">怎麼判斷它是不是 Agent？</p>
+    <h2 style="font-size:40px;font-weight:900;color:var(--accent-1);line-height:1.3">看它能不能動你的<br>「本地端檔案」</h2>
+    <div class="deco-line" style="margin:22px auto"></div>
+    <p class="sub">能 → 是 Agent　｜　不能 → 只是聊天</p>
+  </div>
+</section>
+
+<!-- 6 課前準備清單 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">BEFORE WE START</p>
+    <h2 class="h-title">課前準備清單（請先確認）</h2>
+    <div class="deco-line"></div>
+    <ul class="chk">
+      <li><span class="b"></span><div>已有 <b>Google 帳號</b>（登入 AntiGravity，最好有訂閱 → 享 3 倍用量）</div></li>
+      <li><span class="b"></span><div>已註冊 <b>GitHub</b> 帳號（卡圖形驗證時，截圖問 AI 即可）</div></li>
+      <li><span class="b"></span><div>已註冊 <b>Padlet</b> 帳號</div></li>
+      <li><span class="b"></span><div>已下載安裝 <b>Obsidian</b></div></li>
+      <li><span class="b"></span><div>筆電可安裝軟體、網路正常、帶耳機</div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 7 章節 Part1 -->
+<section class="slide bg sec1">
+  <div class="sec-num">01</div>
+  <div class="inner">
+    <p class="eyebrow">PART 1</p>
+    <h2 style="font-size:46px;font-weight:900;margin-top:12px">下載軟體與環境佈置</h2>
+    <div class="deco-line" style="margin:18px auto;background:var(--accent-4)"></div>
+    <p style="font-size:18px;opacity:.9">下載 → 設定 → 起手式</p>
+  </div>
+</section>
+
+<!-- 8 (a)下載登入 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">PART 1 — (a)</p>
+    <h2 class="h-title">下載 AntiGravity 並登入</h2>
+    <div class="deco-line"></div>
+    <ol class="steps">
+      <li><span class="num">1</span><div class="tx">到 <b>AntiGravity 官方網站</b>下載安裝（Windows／Mac）。<span class="pill">講師現場提供下載連結</span></div></li>
+      <li><span class="num">2</span><div class="tx">用 <b>Google 帳號</b>登入。</div></li>
+      <li><span class="num">3</span><div class="tx">有訂閱 Google 方案者，享 <b>3 倍用量</b>，比較不會跑一跑就沒額度。</div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 9 (b)基礎設定 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">PART 1 — (b)</p>
+    <h2 class="h-title">第一次環境佈置：三個關鍵設定</h2>
+    <div class="deco-line"></div>
+    <ol class="steps">
+      <li><span class="num">1</span><div class="tx">先看額度：左下 <b>Settings → Model</b>，確認 5 小時／週用量。</div></li>
+      <li><span class="num">2</span><div class="tx">打開 <b>Turbo Mode</b>（自動略過部分逐次確認）。</div></li>
+      <li><span class="num">3</span><div class="tx">把 <b>Artifact Review</b> 設成 <b>Always Proceed</b>。</div></li>
+      <li><span class="num">4</span><div class="tx">在 <b>Terminal Command</b> 允許 <code>npm</code>、<code>python</code>。</div></li>
+    </ol>
+    <div class="note">選單名稱可能因版本略有不同，以現場畫面為準。</div>
+  </div>
+</section>
+
+<!-- 10 (c)起手式 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">PART 1 — (c)</p>
+    <h2 class="h-title">起手式：一定要有「工作資料夾」</h2>
+    <div class="deco-line"></div>
+    <ol class="steps">
+      <li><span class="num">1</span><div class="tx">新開專案 → <b>Add Folder</b>，選一個<b>本機資料夾</b>（⚠️ 別放雲端硬碟同步夾）。</div></li>
+      <li><span class="num">2</span><div class="tx">對它說：「<b>這是新專案，幫我初始化</b>」→ 它會建立專案藍圖檔。</div></li>
+      <li><span class="num">3</span><div class="tx">心法：Agent 會動你的真實檔案 → <b>永遠在資料夾裡工作</b>。</div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 11 懶人包 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">ONE-CLICK SETUP</p>
+    <h2 class="h-title">課程懶人包：貼一行，自動設定好</h2>
+    <div class="deco-line"></div>
+    <div class="repo">
+      <p style="font-size:14px;opacity:.8;margin-bottom:6px">📦 課程懶人包 repo</p>
+      <a href="https://github.com/ab0308-del/antigravity-starter-kit" target="_blank">github.com/ab0308-del/antigravity-starter-kit</a>
+    </div>
+    <ol class="steps" style="margin-top:16px">
+      <li><span class="num">1</span><div class="tx">下載 / clone 到本機：<span class="code"><span class="c"># 終端機</span><br>git clone https://github.com/ab0308-del/antigravity-starter-kit.git</span></div></li>
+      <li><span class="num">2</span><div class="tx">AntiGravity → 新開專案 → <b>Add Folder</b> 選這個資料夾。</div></li>
+      <li><span class="num">3</span><div class="tx">對它說：「<b>請按照這個資料夾的 agents.md 幫我完成課程設定。</b>」</div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 12 章節 Part2 -->
+<section class="slide bg sec2">
+  <div class="sec-num">02</div>
+  <div class="inner">
+    <p class="eyebrow">PART 2</p>
+    <h2 style="font-size:46px;font-weight:900;margin-top:12px">嘗試操作：讓 AI 整理桌面</h2>
+    <div class="deco-line" style="margin:18px auto;background:var(--accent-4)"></div>
+    <p style="font-size:18px;opacity:.9">第一次成功，就是這一刻</p>
+  </div>
+</section>
+
+<!-- 13 整理練習步驟 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">HANDS-ON</p>
+    <h2 class="h-title">整理練習：把亂資料夾變整齊</h2>
+    <div class="deco-line"></div>
+    <ol class="steps">
+      <li><span class="num">1</span><div class="tx">打開懶人包裡的 <b>練習素材／整理練習／</b>（18 個雜亂檔）。</div></li>
+      <li><span class="num">2</span><div class="tx">把資料夾 <b>Add Folder</b> 進 AntiGravity。</div></li>
+      <li><span class="num">3</span><div class="tx">下這句指令：<span class="code">幫我把這個資料夾的檔案，依類型分到子資料夾<br>（圖片／文件／簡報／表格／PDF／壓縮檔／其他），<br>把「螢幕擷取畫面」另歸一類，最後寫一份整理報告.md。</span></div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 14 觀察重點 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">WHAT TO NOTICE</p>
+    <h2 class="h-title">觀察重點</h2>
+    <div class="deco-line"></div>
+    <div class="grid2">
+      <div class="box"><h4>① 它怎麼做事</h4><p>讀檔 → 提出計畫 → 請你確認 → 動手 → 回報。</p></div>
+      <div class="box"><h4>② 確認機制</h4><p>體會 Turbo Mode 開／關時，「要不要你逐次允許」的差別。</p></div>
+      <div class="box"><h4>③ 對照報告</h4><p>打開 <code>整理報告.md</code>，看它搬了哪些檔。</p></div>
+      <div class="box"><h4>④ 不怕做錯</h4><p>跑錯可以叫它還原或重做——這是練習。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 章節 Part3 -->
+<section class="slide bg sec3">
+  <div class="sec-num">03</div>
+  <div class="inner">
+    <p class="eyebrow">PART 3</p>
+    <h2 style="font-size:46px;font-weight:900;margin-top:12px">AI Agent 功能展示</h2>
+    <div class="deco-line" style="margin:18px auto;background:var(--accent-4)"></div>
+    <p style="font-size:18px;opacity:.9">教師最有感的三個應用</p>
+  </div>
+</section>
+
+<!-- 16 實例 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">SHOWCASE</p>
+    <h2 class="h-title">三個現場 Demo</h2>
+    <div class="deco-line"></div>
+    <ul class="steps">
+      <li><span class="num">1</span><div class="tx"><b>極速備課</b>：一句話用 Computer Use 上網下載歷屆會考題、整理檔案。</div></li>
+      <li><span class="num">2</span><div class="tx"><b>一鍵做互動教學網頁</b>：把 PPT／教材 → 互動 HTML 教學頁。</div></li>
+      <li><span class="num">3</span><div class="tx"><b>一句話生成 Padlet 課程牆</b>：自動分區、投票、AI 插圖。</div></li>
+    </ul>
+    <div class="note">⚠️ 敏感網站（網銀、機密帳號）不要讓 Agent 代為登入。</div>
+  </div>
+</section>
+
+<!-- 17 章節 串接 -->
+<section class="slide bg sec4">
+  <div class="inner">
+    <p class="eyebrow">COMING NEXT · EP02–04</p>
+    <h2 style="font-size:42px;font-weight:900;margin-top:12px">串接你的工具箱</h2>
+    <div class="deco-line" style="margin:18px auto;background:var(--accent-4)"></div>
+    <p style="font-size:18px;opacity:.92">Obsidian 第二大腦　·　GitHub　·　Padlet MCP</p>
+    <p style="font-size:15px;opacity:.78;margin-top:8px">今天先看示範，動手做留到接下來幾集</p>
+  </div>
+</section>
+
+<!-- 18 系列地圖 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">SERIES MAP</p>
+    <h2 class="h-title">這套系列怎麼走</h2>
+    <div class="deco-line"></div>
+    <ul class="tl">
+      <li><span class="ep">EP01</span><div class="d"><b>環境佈置與第一次動手</b>（今天）</div></li>
+      <li><span class="ep">EP02</span><div class="d">Obsidian 第二大腦：串接 + 用它備課</div></li>
+      <li><span class="ep">EP03</span><div class="d">GitHub：連接 + 把教學網頁發佈上線</div></li>
+      <li><span class="ep">EP04</span><div class="d">Padlet MCP：串接 + 一句話生成課程牆</div></li>
+      <li><span class="ep">EP05</span><div class="d">進階：過渡到 Codex／Claude Code／OpenCode</div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 19 進階過渡 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">LEVEL UP</p>
+    <h2 class="h-title">邏輯相通，換工具不換腦</h2>
+    <div class="deco-line"></div>
+    <table class="cmp">
+      <tr><th>工具</th><th>一句話</th></tr>
+      <tr><td><b>AntiGravity</b></td><td>最快、Google 訂閱、適合不難的工作（今天的起點）</td></tr>
+      <tr><td><b>Codex</b></td><td>付費首選、最強但慢、Computer Use 最強</td></tr>
+      <tr><td><b>Claude Code</b></td><td>品質最好但貴、適合複雜大型專案</td></tr>
+      <tr><td><b>OpenCode</b></td><td>免費／便宜、開源、可接任何供應商</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 20 心法 -->
+<section class="slide" style="flex-direction:column;text-align:center">
+  <div class="card">
+    <p class="sub" style="margin-bottom:16px">帶走這三句心法</p>
+    <h2 style="font-size:30px;font-weight:900;color:var(--accent-1);line-height:1.7">① Agent 是<span style="color:var(--accent-3)">動手</span>，不是聊天<br>② 永遠<span style="color:var(--accent-3)">在資料夾裡</span>工作<br>③ 先求<span style="color:var(--accent-3)">快上手</span>，再求深</h2>
+    <div class="deco-line" style="margin:20px auto"></div>
+    <p class="sub">🔐 AI 素養：只克隆/使用本人或授權內容；對不明來電保持懷疑</p>
+  </div>
+</section>
+
+<!-- 21 作業 -->
+<section class="slide">
+  <div class="wrap">
+    <p class="h-eyebrow">YOUR TASK</p>
+    <h2 class="h-title">你的作業</h2>
+    <div class="deco-line"></div>
+    <ol class="steps">
+      <li><span class="num">1</span><div class="tx">把今天的成果（整理好的資料夾／截圖）<b>上傳 Padlet</b>。</div></li>
+      <li><span class="num">2</span><div class="tx">寫一句：你想怎麼把它用在<b>你的課堂或工作</b>？</div></li>
+      <li><span class="num">3</span><div class="tx">回去用它完成一件你本來覺得麻煩的事，記進你的<b>第二大腦</b>。</div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 22 結尾 -->
+<section class="slide bg ending">
+  <div class="inner">
+    <p style="font-family:'Playfair Display';font-size:64px;margin-bottom:10px">謝謝</p>
+    <div class="deco-line" style="margin:0 auto 22px;background:var(--accent-4)"></div>
+    <p style="font-size:20px;opacity:.92">你學會的不是一個軟體，而是一種跟 AI 協作的新方式</p>
+    <p style="font-size:15px;opacity:.78;margin-top:12px">Q&amp;A　·　懶人包：github.com/ab0308-del/antigravity-starter-kit　·　下次 EP02：Obsidian 第二大腦</p>
+  </div>
+</section>
+
+</div>
+
+<div class="progress-bar" id="bar"></div>
+<div class="slide-counter" id="counter">1 / 22</div>
+<div class="nav-hint">← → 換頁，或點畫面前進</div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+const bar=document.getElementById('bar'), counter=document.getElementById('counter');
+let cur=0;
+function show(n){
+  cur=Math.max(0,Math.min(n,slides.length-1));
+  slides.forEach((s,i)=>{
+    s.classList.toggle('active', i===cur);
+    s.classList.toggle('prev', i<cur);
+  });
+  bar.style.width=((cur+1)/slides.length*100)+'%';
+  counter.textContent=(cur+1)+' / '+slides.length;
+}
+show(0);
+document.addEventListener('keydown',e=>{
+  if(['ArrowRight','ArrowDown',' '].includes(e.key)){e.preventDefault();show(cur+1);}
+  if(['ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();show(cur-1);}
+});
+document.getElementById('wrap').addEventListener('click',e=>{
+  if(e.target.closest('a')) return;       // 點連結不換頁
+  show(cur+1);
+});
+</script>
+</body>
+</html>
